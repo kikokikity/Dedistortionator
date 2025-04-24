@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dedistortionator</title>
+    <style>
+        :root {
+            --sky-blue: #87CEEB;
+            --sunrise-orange: #FFA07A;
+        }
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(to bottom, var(--sky-blue), var(--sunrise-orange));
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            color: #333;
+        }
+        header {
+            text-align: center;
+            padding: 2rem 1rem;
+            width: 100%;
+        }
+        h1 {
+            color: #fff;
+            text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.3);
+            margin-bottom: 0.5rem;
+        }
+        .subtitle {
+            color: #fff;
+            font-size: 1.2rem;
+            margin-bottom: 2rem;
+        }
+        .container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 90%;
+            max-width: 800px;
+            background-color: rgba(255, 255, 255, 0.9);
+            border-radius: 12px;
+            padding: 2rem;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            margin-bottom: 2rem;
+        }
+        .video-container {
+            width: 100%;
+            position: relative;
+            padding-top: 56.25%; /* 16:9 Aspect Ratio */
+            margin-bottom: 2rem;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        .video-container iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+        .audio-controls {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+            margin-top: 1rem;
+        }
+        .progress-container {
+            width: 100%;
+            background-color: #e0e0e0;
+            height: 10px;
+            border-radius: 5px;
+            margin-bottom: 1rem;
+            overflow: hidden;
+        }
+        .progress-bar {
+            height: 100%;
+            background-color: var(--sunrise-orange);
+            width: 0%;
+            transition: width 0.2s;
+        }
+        .buttons {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+        button {
+            background-color: var(--sky-blue);
+            color: white;
+            border: none;
+            padding: 0.75rem 2rem;
+            font-size: 1rem;
+            border-radius: 30px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 120px;
+        }
+        button:hover {
+            background-color: var(--sunrise-orange);
+            transform: translateY(-2px);
+        }
+        button:active {
+            transform: translateY(0);
+        }
+        .instructions {
+            margin-top: 1.5rem;
+            padding: 1rem;
+            background-color: rgba(135, 206, 235, 0.2);
+            border-radius: 8px;
+            width: 100%;
+        }
+        h3 {
+            color: var(--sunrise-orange);
+        }
+        .time-display {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: var(--sunrise-orange);
+            margin-bottom: 1rem;
+        }
+        footer {
+            margin-top: auto;
+            padding: 1rem;
+            text-align: center;
+            color: white;
+            width: 100%;
+        }
+        .game-container {
+            margin-top: 2rem;
+            width: 100%;
+            background-color: rgba(135, 206, 235, 0.2);
+            border-radius: 8px;
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .game-title {
+            color: var(--sunrise-orange);
+            margin-bottom: 1rem;
+            text-align: center;
+        }
+        .game-description {
+            margin-bottom: 1.5rem;
+            text-align: center;
+        }
+        .compliment-options {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+        .compliment-button {
+            background-color: white;
+            border: 2px solid var(--sky-blue);
+            color: #333;
+            padding: 0.75rem 1.5rem;
+            font-size: 1rem;
+            border-radius: 30px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .compliment-button:hover {
+            background-color: var(--sky-blue);
+            color: white;
+            transform: translateY(-2px);
+        }
+        .compliment-button.selected {
+            background-color: var(--sunrise-orange);
+            border-color: var(--sunrise-orange);
+            color: white;
+        }
+        .game-status {
+            font-size: 1.1rem;
+            font-weight: bold;
+            margin: 1rem 0;
+            color: var(--sunrise-orange);
+        }
+        .add-compliment-form {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+            max-width: 500px;
+            margin-top: 1rem;
+        }
+        .add-compliment-form input {
+            width: 100%;
+            padding: 0.75rem;
+            font-size: 1rem;
+            border: 2px solid var(--sky-blue);
+            border-radius: 8px;
+            margin-bottom: 1rem;
+        }
+        .add-compliment-form button {
+            min-width: 150px;
+        }
+        .collected-compliments {
+            width: 100%;
+            margin-top: 1.5rem;
+        }
+        .collected-compliments h4 {
+            color: var(--sky-blue);
+            margin-bottom: 0.5rem;
+        }
+        .compliments-list {
+            list-style-type: none;
+            padding: 0;
+            margin: 0;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+        .compliments-list li {
+            background-color: var(--sky-blue);
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.9rem;
+        }
+        .volume-controls {
+            width: 100%;
+            max-width: 600px;
+            margin: 1rem 0;
+            padding: 1rem;
+            background-color: rgba(135, 206, 235, 0.1);
+            border-radius: 8px;
+        }
+        .volume-slider {
+            display: flex;
+            align-items: center;
+            margin: 0.5rem 0;
+            gap: 1rem;
+        }
+        .volume-slider label {
+            min-width: 150px;
+            color: #333;
+        }
+        .volume-slider input[type="range"] {
+            flex: 1;
+            height: 8px;
+            border-radius: 4px;
+            background: var(--sky-blue);
+            outline: none;
+        }
+        .volume-value {
+            min-width: 50px;
+            text-align: right;
+            color: var(--sunrise-orange);
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Dedistortionator</h1>
+        <p class="subtitle">Something to calm yourself when you need it☕️</p>
+    </header>
+    <div style="position: absolute; opacity: 0; pointer-events: none;">
+        <div id="audioPlayer"></div>
+        <div id="player2"></div>
+        <div id="player3"></div>
+        <div id="player4"></div>
+        <div id="player5"></div>
+    </div>
+    <div class="container">
+        <div class="video-container">
+            <div id="player"></div>
+        </div>
+        <div class="audio-controls">
+            <h3>Guided Meditation Audio</h3>
+            <div class="time-display" id="timeDisplay">0:00 / 5:00</div>
+            <div class="progress-container">
+                <div class="progress-bar" id="progressBar"></div>
+            </div>
+            <div class="buttons">
+                <button id="playBtn">▶ Play</button>
+                <button id="stopBtn">■ Stop</button>
+                <button id="resetBtn">↺ Reset</button>
+            </div>
+            <audio id="meditationAudio">
+                <source src="" type="audio/mpeg">
+                Your browser does not support the audio element.
+            </audio>
+        </div>
+        <div class="volume-controls">
+            <div class="volume-slider">
+                <label>Breathing exercise</label>
+                <input type="range" id="volume0" min="0" max="100" value="40">
+                <span class="volume-value">40%</span>
+            </div>
+            <div class="volume-slider">
+                <label>Bird Sounds</label>
+                <input type="range" id="volume1" min="0" max="100" value="15">
+                <span class="volume-value">15%</span>
+            </div>
+            <div class="volume-slider">
+                <label>Heart Beat</label>
+                <input type="range" id="volume2" min="0" max="100" value="15">
+                <span class="volume-value">15%</span>
+            </div>
+            <div class="volume-slider">
+                <label>Binaural Beats</label>
+                <input type="range" id="volume3" min="0" max="100" value="15">
+                <span class="volume-value">15%</span>
+            </div>
+            <div class="volume-slider">
+                <label>Ocean Waves</label>
+                <input type="range" id="volume4" min="0" max="100" value="15">
+                <span class="volume-value">15%</span>
+            </div>
+        </div>
+        <div class="instructions">
+            <h3>How to use this website:</h3>
+            <ol>
+                <li>You have the option of 5 sounds. (all of which independently have been shown to have a calming effect.)</li>
+                <li>Use play, pause, and restart to manipulate the audio</li>
+                <li>The sliders are used to adjust the volume of the 5 different sounds.</li>
+                <li>You can watch and follow the video above, or play the game below.</li>
+                <li>thanks for listening to my presentation!</li>
+            </ol>
+        </div>
+        <div class="game-container">
+            <h3 class="game-title">Positive Affirmation Game</h3>
+            <p class="game-description">Select all the positive compliments from the options below. Collect 3 to unlock the ability to add your own!</p>
+            <div class="compliment-options" id="complimentOptions">
+            </div>
+            <div class="game-status" id="gameStatus">Find the positive compliments!</div>
+            <button id="checkAnswersBtn">Check Selections</button>
+            <form class="add-compliment-form" id="addComplimentForm">
+                <h4>Create your own positive affirmation:</h4>
+                <input type="text" id="newComplimentInput" placeholder="Type your own positive affirmation..." maxlength="50" required>
+                <button type="submit">Add Compliment</button>
+            </form>
+            <div class="collected-compliments">
+                <h4>Your Collection:</h4>
+                <ul class="compliments-list" id="complimentsList">
+                </ul>
+            </div>
+        </div>
+    </div>
+    <footer>
+        <p>Created for mindful grounding practice &copy; 2025</p>
+    </footer>
+    <script>
+        const playBtn = document.getElementById('playBtn');
+        const stopBtn = document.getElementById('stopBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const progressBar = document.getElementById('progressBar');
+        const timeDisplay = document.getElementById('timeDisplay');
+        let isPlaying = false;
+        let audioProgress = 0;
+        const audioDuration = 300;
+        let audioInterval;
+        let players = [];
+        const videoIds = [
+            'LiUnFJ8P4gM',  // Main visible breathing video
+            'haggdJjc0zI?si=MoF4i9qPWV6PjyN7',  // bird sounds
+            'o3GSHb0RP6o?si=b6g76gsBJPXFmBb0',  // heart beat
+            'vYf5NZrLbY4?si=9lD4_x1UEydCL8jZ',  // 10hz bineural sounds
+            'bn9F19Hi1Lk?si=VKxTr4r1RhJbfAIQ'   // waves sounds
+        ];
+        const tag = document.createElement('script');
+        tag.src = "https://www.youtube.com/iframe_api";
+        const firstScriptTag = document.getElementsByTagName('script')[0];
+        firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+        function onYouTubeIframeAPIReady() {
+            // Initialize main visible player
+            players[0] = new YT.Player('player', {
+                height: '100%',
+                width: '100%',
+                videoId: videoIds[0],
+                playerVars: {
+                    'playsinline': 1,
+                    'controls': 0,
+                    'rel': 0,
+                    'modestbranding': 1
+                },
+                events: {
+                    'onReady': onPlayerReady
+                }
+            });
+
+            // Initialize background audio players
+            for (let i = 2; i <= 5; i++) {
+                players[i-1] = new YT.Player(`player${i}`, {
+                    height: '1',
+                    width: '1',
+                    videoId: videoIds[i-1],
+                    playerVars: {
+                        'playsinline': 1,
+                        'controls': 0,
+                        'rel': 0,
+                        'modestbranding': 1
+                    },
+                    events: {
+                        'onReady': onBackgroundPlayerReady
+                    }
+                });
+            }
+        }
+        function initVolumeControls() {
+            for (let i = 0; i < 5; i++) {
+                const volumeSlider = document.getElementById(`volume${i}`);
+                const volumeValue = volumeSlider.nextElementSibling;
+                
+                volumeSlider.addEventListener('input', function() {
+                    const volume = this.value;
+                    volumeValue.textContent = `${volume}%`;
+                    
+                    if (players[i] && typeof players[i].setVolume === 'function') {
+                        players[i].setVolume(volume);
+                    }
+                });
+            }
+        }
+        function onPlayerReady(event) {
+            console.log("Main player ready");
+            event.target.setVolume(40);
+            initVolumeControls();
+        }
+        function onBackgroundPlayerReady(event) {
+            console.log("Background player ready");
+            event.target.setVolume(15);
+            initVolumeControls();
+        }
+        function formatTime(seconds) {
+            const mins = Math.floor(seconds / 60);
+            const secs = Math.floor(seconds % 60);
+            return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
+        }
+        function updateProgress() {
+            if (audioProgress < audioDuration) {
+                audioProgress += 1;
+                const percentage = (audioProgress / audioDuration) * 100;
+                progressBar.style.width = `${percentage}%`;
+                timeDisplay.textContent = `${formatTime(audioProgress)} / ${formatTime(audioDuration)}`;
+            } else {
+                stopAudio();
+            }
+        }
+        function playAudio() {
+            if (!isPlaying) {
+                isPlaying = true;
+                playBtn.innerHTML = "❚❚ Pause";
+                audioInterval = setInterval(updateProgress, 1000);
+                players.forEach(player => {
+                    if (player && typeof player.playVideo === 'function') {
+                        player.playVideo();
+                    }
+                });
+            } else {
+                isPlaying = false;
+                playBtn.innerHTML = "▶ Play";
+                clearInterval(audioInterval);
+                players.forEach(player => {
+                    if (player && typeof player.pauseVideo === 'function') {
+                        player.pauseVideo();
+                    }
+                });
+            }
+        }
+        function stopAudio() {
+            isPlaying = false;
+            playBtn.innerHTML = "▶ Play";
+            clearInterval(audioInterval);
+            players.forEach(player => {
+                if (player && typeof player.pauseVideo === 'function') {
+                    player.pauseVideo();
+                }
+            });
+        }
+        function resetAudio() {
+            stopAudio();
+            audioProgress = 0;
+            progressBar.style.width = '0%';
+            timeDisplay.textContent = `${formatTime(0)} / ${formatTime(audioDuration)}`;
+            players.forEach(player => {
+                if (player && typeof player.seekTo === 'function') {
+                    player.seekTo(0);
+                    player.pauseVideo();
+                }
+            });
+        }
+        playBtn.addEventListener('click', playAudio);
+        stopBtn.addEventListener('click', stopAudio);
+        resetBtn.addEventListener('click', resetAudio);
+        timeDisplay.textContent = `${formatTime(0)} / ${formatTime(audioDuration)}`;
+        setTimeout(() => {
+            if (!players[0]) {
+                const playerDiv = document.getElementById('player');
+                playerDiv.innerHTML = `<img src="/api/placeholder/800/450" alt="Nature scene placeholder" style="width:100%;height:100%;object-fit:cover;border-radius:8px;">
+                <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:white;text-align:center;background:rgba(0,0,0,0.5);padding:1rem;border-radius:8px;">
+                    <p>YouTube video would play here</p>
+                </div>`;
+            }
+        }, 3000);
+        const complimentOptions = document.getElementById('complimentOptions');
+        const gameStatus = document.getElementById('gameStatus');
+        const checkAnswersBtn = document.getElementById('checkAnswersBtn');
+        const addComplimentForm = document.getElementById('addComplimentForm');
+        const newComplimentInput = document.getElementById('newComplimentInput');
+        const complimentsList = document.getElementById('complimentsList');
+        let selectedCompliments = [];
+        let collectedCompliments = [];
+        let round = 1;
+        let correctAnswersNeeded = 3;
+        const positiveCompliments = [
+            "You are worthy of love",
+            "Your kindness makes a difference",
+            "You have a beautiful smile",
+            "Your creativity is inspiring",
+            "You bring joy to others",
+            "Your presence is appreciated",
+            "You have valuable insights",
+            "Your strength is admirable",
+            "You're doing better than you think",
+            "Your effort doesn't go unnoticed",
+            "You make the world brighter",
+            "Your perspective is valuable",
+            "You are enough just as you are",
+            "Your resilience is remarkable",
+            "You deserve good things",
+            "Your heart is beautiful",
+            "You have important gifts to share",
+            "Your voice matters",
+            "You handle challenges gracefully",
+            "Your authenticity is refreshing"
+        ];
+        const otherStatements = [
+            "The weather is changing",
+            "This could use improvement",
+            "That didn't work well",
+            "Try harder next time",
+            "This isn't your best work",
+            "You should do better",
+            "People are often judgmental",
+            "Life can be difficult",
+            "Not everyone will like you",
+            "Some days are harder than others",
+            "Your flaws are obvious",
+            "Mistakes are inevitable",
+            "People notice your errors",
+            "You need more practice",
+            "Others are more talented"
+        ];
+        function initGame() {
+            generateComplimentOptions();
+            checkAnswersBtn.addEventListener('click', checkAnswers);
+            addComplimentForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                addNewCompliment();
+            });
+        }
+        function generateComplimentOptions() {
+            complimentOptions.innerHTML = '';
+            selectedCompliments = [];
+            const numPositive = 3;
+            const numOthers = Math.floor(Math.random() * 2) + 3; // 3-4 others
+            const shuffledPositive = [...positiveCompliments].sort(() => 0.5 - Math.random());
+            const selectedPositive = shuffledPositive.slice(0, numPositive);
+            const shuffledOthers = [...otherStatements].sort(() => 0.5 - Math.random());
+            const selectedOthers = shuffledOthers.slice(0, numOthers);
+            const allOptions = [...selectedPositive, ...selectedOthers].sort(() => 0.5 - Math.random());
+            allOptions.forEach((text, index) => {
+                const button = document.createElement('button');
+                button.className = 'compliment-button';
+                button.textContent = text;
+                button.dataset.isPositive = positiveCompliments.includes(text);
+                button.addEventListener('click', () => toggleSelection(button));
+                complimentOptions.appendChild(button);
+            });
+        }
+        function toggleSelection(button) {
+            button.classList.toggle('selected');
+        }
+        function checkAnswers() {
+            const selectedButtons = document.querySelectorAll('.compliment-button.selected');
+            let correctCount = 0;
+            let incorrectCount = 0;
+            selectedButtons.forEach(button => {
+                if (button.dataset.isPositive === 'true') {
+                    correctCount++;
+                    if (!collectedCompliments.includes(button.textContent)) {
+                        collectedCompliments.push(button.textContent);
+                    }
+                } else {
+                    incorrectCount++;
+                }
+            });
+            updateCollectionDisplay();
+            if (incorrectCount > 0) {
+                gameStatus.textContent = `You selected ${incorrectCount} statement(s) that weren't positive compliments. Try again!`;
+                document.querySelectorAll('.compliment-button.selected').forEach(button => {
+                    button.classList.remove('selected');
+                });
+            } else if (correctCount === 0) {
+                gameStatus.textContent = "You didn't select any compliments. Try selecting the positive ones!";
+            } else if (correctCount < 3) {
+                gameStatus.textContent = `You found ${correctCount}/3 positive compliments. Keep looking!`;
+            } else {
+                gameStatus.textContent = `Great job! You found ${correctCount} positive compliments!`;
+                addComplimentForm.style.display = 'flex';
+                setTimeout(() => {
+                    round++;
+                    generateComplimentOptions();
+                    gameStatus.textContent = `Round ${round}: Find more positive compliments!`;
+                }, 2000);
+            }
+        }
+        function addNewCompliment() {
+            const newCompliment = newComplimentInput.value.trim();
+            if (newCompliment && !collectedCompliments.includes(newCompliment)) {
+                collectedCompliments.push(newCompliment);
+                positiveCompliments.push(newCompliment);
+                updateCollectionDisplay();
+                newComplimentInput.value = '';
+                addComplimentForm.style.display = 'none';
+                gameStatus.textContent = `Your compliment was added! Continue with Round ${round}.`;
+            }
+        }
+        function updateCollectionDisplay() {
+            complimentsList.innerHTML = '';
+            collectedCompliments.forEach(compliment => {
+                const li = document.createElement('li');
+                li.textContent = compliment;
+                complimentsList.appendChild(li);
+            });
+        }
+        window.addEventListener('load', () => {
+            initGame();
+        });
+    </script>
+</body>
+</html>
